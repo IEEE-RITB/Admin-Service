@@ -1,0 +1,16 @@
+{
+    "sidebarLinks": [
+        {
+            "name": "Home",
+            "url": "/"
+        },
+        {
+            "name": "All Event",
+            "url": "/events"
+        },
+        {
+            "name": "Create Event",
+            "url": "/create-event"
+        }
+    ]
+}
