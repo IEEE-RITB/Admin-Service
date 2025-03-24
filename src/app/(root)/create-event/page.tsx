@@ -1,454 +1,400 @@
 "use client";
 
-import { Button } from "@/components/ui/button";
-import { useToast } from "@/hooks/use-toast";
+import { useState, FormEvent, ChangeEvent } from "react";
 import { useRouter } from "next/navigation";
-import { useForm, useFieldArray } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { EventSchema, type IEventSchema } from "@/validators/event-validators";
+import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
   CardDescription,
-  CardFooter,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import {
-  Form,
-  FormControl,
-  FormDescription,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "@/components/ui/accordion";
-import { PlusCircle, Trash2 } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
+import { PlusCircle, Trash2 } from "lucide-react";
 import axios from "axios";
+
+// Define interfaces for form data structures
+interface TimelineEntry {
+  activity: string;
+  time: string;
+}
+
+interface PrizeEntry {
+  position: number;
+  amount: number;
+}
+
+interface CoordinatorEntry {
+  name: string;
+  contactNumber: string;
+}
+
+interface EventFormData {
+  userId: string;
+  name: string;
+  description: string;
+  date: string;
+  venue: string;
+  theme: string;
+  maxParticipantsPerTeam: number;
+  img: string;
+  timeline: TimelineEntry[];
+  organizerId: string;
+  prizes: PrizeEntry[];
+  rules: string[];
+  coordinators: CoordinatorEntry[];
+}
 
 export default function CreateEventPage() {
   const router = useRouter();
-  const { toast } = useToast();
-  const form = useForm<IEventSchema>({
-    resolver: zodResolver(EventSchema),
-    defaultValues: {
-      userId: "67ddb0d8259f13d1ad4a6e75",
-      name: "",
-      description: "",
-      date: new Date().toISOString().slice(0, 16),
-      venue: "",
-      theme: "",
-      maxParticipantsPerTeam: 4,
-      img: "https://images.unsplash.com/photo-1726137065566-153debe32a53?q=80&w=1974&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDF8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
-      timeline: [{ activity: "", time: "" }],
-      organizerId: "67dd699539ccce92cace749c",
-      prizes: [{ position: 1, amount: 0 }],
-      rules: [""],
-      coordinators: [{ name: "", contactNumber: "" }],
-    },
+  const [formData, setFormData] = useState<EventFormData>({
+    userId: "67ddb0d8259f13d1ad4a6e75",
+    name: "",
+    description: "",
+    date: new Date().toISOString().slice(0, 16),
+    venue: "",
+    theme: "",
+    maxParticipantsPerTeam: 4,
+    img: "https://images.unsplash.com/photo-1726137065566-153debe32a53?q=80&w=1974&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDF8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+    timeline: [{ activity: "", time: "" }],
+    organizerId: "67dd699539ccce92cace749c",
+    prizes: [{ position: 1, amount: 0 }],
+    rules: [""],
+    coordinators: [{ name: "", contactNumber: "" }],
   });
 
-  const { fields: timelineFields, append: appendTimeline, remove: removeTimeline } = useFieldArray({
-    control: form.control,
-    name: "timeline",
-  });
-
-  const { fields: prizeFields, append: appendPrize, remove: removePrize } = useFieldArray({
-    control: form.control,
-    name: "prizes",
-  });
-
-  const { fields: ruleFields, append: appendRule, remove: removeRule } = useFieldArray({
-    control: form.control,
-    name: "rules",
-  }) as unknown as {
-    fields: { id: string }[];
-    append: (value: string) => void;
-    remove: (index: number) => void;
+  const handleChange = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const { fields: coordinatorFields, append: appendCoordinator, remove: removeCoordinator } = useFieldArray({
-    control: form.control,
-    name: "coordinators",
-  });
+  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    try {
+      const response = await axios.post("/api/create-event", formData);
+      router.push("/");
+      console.log("Event created successfully:", response.data);
+    } catch (error) {
+      console.error("Error creating event:", error);
+    }
+  };
+
+  // Dynamic section update handlers
+  const addTimelineEntry = () => {
+    setFormData((prev) => ({
+      ...prev,
+      timeline: [...prev.timeline, { activity: "", time: "" }],
+    }));
+  };
+
+  const updateTimelineEntry = (index: number, field: keyof TimelineEntry, value: string) => {
+    const newTimeline = [...formData.timeline];
+    newTimeline[index][field] = value;
+    setFormData((prev) => ({ ...prev, timeline: newTimeline }));
+  };
+
+  const removeTimelineEntry = (index: number) => {
+    setFormData((prev) => ({
+      ...prev,
+      timeline: prev.timeline.filter((_, i) => i !== index),
+    }));
+  };
+
+  const addPrizeEntry = () => {
+    setFormData((prev) => ({
+      ...prev,
+      prizes: [...prev.prizes, { position: prev.prizes.length + 1, amount: 0 }],
+    }));
+  };
+
+  const updatePrizeEntry = (index: number, field: keyof PrizeEntry, value: string) => {
+    const newPrizes = [...formData.prizes];
+    newPrizes[index][field] = field === 'position' ? parseInt(value) : Number(value);
+    setFormData((prev) => ({ ...prev, prizes: newPrizes }));
+  };
+
+  const removePrizeEntry = (index: number) => {
+    setFormData((prev) => ({
+      ...prev,
+      prizes: prev.prizes.filter((_, i) => i !== index),
+    }));
+  };
+
+  const addRuleEntry = () => {
+    setFormData((prev) => ({
+      ...prev,
+      rules: [...prev.rules, ""],
+    }));
+  };
+
+  const updateRuleEntry = (index: number, value: string) => {
+    const newRules = [...formData.rules];
+    newRules[index] = value;
+    setFormData((prev) => ({ ...prev, rules: newRules }));
+  };
+
+  const removeRuleEntry = (index: number) => {
+    setFormData((prev) => ({
+      ...prev,
+      rules: prev.rules.filter((_, i) => i !== index),
+    }));
+  };
+
+  const addCoordinatorEntry = () => {
+    setFormData((prev) => ({
+      ...prev,
+      coordinators: [...prev.coordinators, { name: "", contactNumber: "" }],
+    }));
+  };
+
+  const updateCoordinatorEntry = (index: number, field: keyof CoordinatorEntry, value: string) => {
+    const newCoordinators = [...formData.coordinators];
+    newCoordinators[index][field] = value;
+    setFormData((prev) => ({ ...prev, coordinators: newCoordinators }));
+  };
+
+  const removeCoordinatorEntry = (index: number) => {
+    setFormData((prev) => ({
+      ...prev,
+      coordinators: prev.coordinators.filter((_, i) => i !== index),
+    }));
+  };
 
   return (
-    <div className="container py-10 max-w-4xl ">
+    <div className="container py-10 max-w-4xl">
       <Card className="border shadow-md">
         <CardHeader className="bg-slate-50 border-b">
           <CardTitle className="text-2xl">Create Event</CardTitle>
           <CardDescription>Fill in the details to create a new event</CardDescription>
         </CardHeader>
         <CardContent className="p-6">
-          <Form {...form}>
-            <form onSubmit={(e) => {
-              e.preventDefault();
-              console.log('Form values:', form.getValues());
-            }} className="space-y-8">
-              {/* Basic Information */}
-              <div className="space-y-4">
-                <h3 className="text-lg font-medium">Basic Information</h3>
-                <Separator />
-                
-                <FormField
-                  control={form.control}
-                  name="name"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Event Name</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Enter event name" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+          <form onSubmit={handleSubmit} className="space-y-8">
+            {/* Basic Information Section */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-medium">Basic Information</h3>
+              <Separator />
+              <Input 
+                name="name" 
+                placeholder="Event Name" 
+                value={formData.name} 
+                onChange={handleChange} 
+                required
+              />
+              <Textarea 
+                name="description" 
+                placeholder="Describe your event" 
+                value={formData.description} 
+                onChange={handleChange} 
+                required
+              />
+              <Input 
+                type="datetime-local" 
+                name="date" 
+                value={formData.date} 
+                onChange={handleChange} 
+                required
+              />
+              <Input 
+                name="venue" 
+                placeholder="Venue" 
+                value={formData.venue} 
+                onChange={handleChange} 
+                required
+              />
+              <Input 
+                name="theme" 
+                placeholder="Theme" 
+                value={formData.theme} 
+                onChange={handleChange} 
+              />
+              <Input 
+                type="number" 
+                name="maxParticipantsPerTeam" 
+                placeholder="Max Participants per Team"
+                value={formData.maxParticipantsPerTeam} 
+                onChange={handleChange} 
+                required
+                min={1}
+              />
+              <Input 
+                name="img" 
+                placeholder="Image URL" 
+                value={formData.img} 
+                onChange={handleChange} 
+              />
+            </div>
 
-                <FormField
-                  control={form.control}
-                  name="description"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Description</FormLabel>
-                      <FormControl>
-                        <Textarea 
-                          placeholder="Describe your event" 
-                          className="min-h-32" 
-                          {...field} 
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <FormField
-                    control={form.control}
-                    name="date"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Date & Time</FormLabel>
-                        <FormControl>
-                          <Input type="datetime-local" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="venue"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Venue</FormLabel>
-                        <FormControl>
-                          <Input placeholder="Event location" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <FormField
-                    control={form.control}
-                    name="theme"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Theme</FormLabel>
-                        <FormControl>
-                          <Input placeholder="Event theme" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="maxParticipantsPerTeam"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Max Participants Per Team</FormLabel>
-                        <FormControl>
-                          <Input 
-                            type="number" 
-                            min="1" 
-                            placeholder="Enter maximum participants" 
-                            {...field}
-                            onChange={(e) => field.onChange(Number(e.target.value))}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-
-                <FormField
-                  control={form.control}
-                  name="img"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Cover Image URL</FormLabel>
-                      <FormControl>
-                        <Input placeholder="https://example.com/image.jpg" {...field} />
-                      </FormControl>
-                      <FormDescription>
-                        Provide a URL to an image that represents your event
-                      </FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+            {/* Timeline Section */}
+            <div className="space-y-4">
+              <div className="flex justify-between items-center">
+                <h3 className="text-lg font-medium">Event Timeline</h3>
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={addTimelineEntry}
+                >
+                  <PlusCircle className="mr-2 h-4 w-4" /> Add Timeline Entry
+                </Button>
               </div>
-
-              {/* Accordion for additional sections */}
-              <Accordion type="single" collapsible className="w-full">
-                {/* Timeline Section */}
-                <AccordionItem value="timeline">
-                  <AccordionTrigger className="text-lg font-medium">
-                    Event Timeline
-                  </AccordionTrigger>
-                  <AccordionContent className="pt-4 space-y-4">
-                    {timelineFields.map((field, index) => (
-                      <div key={field.id} className="flex gap-4 items-end">
-                        <FormField
-                          control={form.control}
-                          name={`timeline.${index}.activity`}
-                          render={({ field }) => (
-                            <FormItem className="flex-1">
-                              <FormLabel>Activity</FormLabel>
-                              <FormControl>
-                                <Input placeholder="Activity name" {...field} />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                        <FormField
-                          control={form.control}
-                          name={`timeline.${index}.time`}
-                          render={({ field }) => (
-                            <FormItem className="flex-1">
-                              <FormLabel>Time</FormLabel>
-                              <FormControl>
-                                <Input type="time" {...field} />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => removeTimeline(index)}
-                          className="h-10 w-10 rounded-full"
-                          disabled={timelineFields.length === 1}
-                        >
-                          <Trash2 className="h-5 w-5 text-red-500" />
-                        </Button>
-                      </div>
-                    ))}
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={() => appendTimeline({ activity: "", time: "" })}
-                      className="mt-2 w-full"
+              <Separator />
+              {formData.timeline.map((entry, index) => (
+                <div key={index} className="flex space-x-2">
+                  <Input 
+                    placeholder="Activity" 
+                    value={entry.activity}
+                    onChange={(e) => updateTimelineEntry(index, 'activity', e.target.value)}
+                    required
+                  />
+                  <Input 
+                    type="time" 
+                    value={entry.time}
+                    onChange={(e) => updateTimelineEntry(index, 'time', e.target.value)}
+                    required
+                  />
+                  {formData.timeline.length > 1 && (
+                    <Button 
+                      type="button" 
+                      variant="destructive" 
+                      size="icon"
+                      onClick={() => removeTimelineEntry(index)}
                     >
-                      <PlusCircle className="mr-2 h-4 w-4" />
-                      Add Timeline Item
+                      <Trash2 className="h-4 w-4" />
                     </Button>
-                  </AccordionContent>
-                </AccordionItem>
+                  )}
+                </div>
+              ))}
+            </div>
 
-                {/* Prizes Section */}
-                <AccordionItem value="prizes">
-                  <AccordionTrigger className="text-lg font-medium">
-                    Prizes
-                  </AccordionTrigger>
-                  <AccordionContent className="pt-4 space-y-4">
-                    {prizeFields.map((field, index) => (
-                      <div key={field.id} className="flex gap-4 items-end">
-                        <FormField
-                          control={form.control}
-                          name={`prizes.${index}.position`}
-                          render={({ field }) => (
-                            <FormItem className="flex-1">
-                              <FormLabel>Position</FormLabel>
-                              <FormControl>
-                                <Input type="number" min="1" {...field} />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                        <FormField
-                          control={form.control}
-                          name={`prizes.${index}.amount`}
-                          render={({ field }) => (
-                            <FormItem className="flex-1">
-                              <FormLabel>Amount</FormLabel>
-                              <FormControl>
-                                <Input 
-                                  type="number" 
-                                  min="0" 
-                                  step="100" 
-                                  placeholder="Prize amount" 
-                                  {...field} 
-                                />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => removePrize(index)}
-                          className="h-10 w-10 rounded-full"
-                          disabled={prizeFields.length === 1}
-                        >
-                          <Trash2 className="h-5 w-5 text-red-500" />
-                        </Button>
-                      </div>
-                    ))}
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={() => appendPrize({ position: prizeFields.length + 1, amount: 0 })}
-                      className="mt-2 w-full"
-                    >
-                      <PlusCircle className="mr-2 h-4 w-4" />
-                      Add Prize
-                    </Button>
-                  </AccordionContent>
-                </AccordionItem>
-
-                {/* Rules Section */}
-                <AccordionItem value="rules">
-                  <AccordionTrigger className="text-lg font-medium">
-                    Rules
-                  </AccordionTrigger>
-                  <AccordionContent className="pt-4 space-y-4">
-                    {ruleFields.map((field, index) => (
-                      <div key={field.id} className="flex gap-4 items-end">
-                        <FormField
-                          control={form.control}
-                          name={`rules.${index}`}
-                          render={({ field }) => (
-                            <FormItem className="flex-1">
-                              <FormLabel>Rule {index + 1}</FormLabel>
-                              <FormControl>
-                                <Input placeholder="Enter rule" {...field} />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => removeRule(index)}
-                          className="h-10 w-10 rounded-full"
-                          disabled={ruleFields.length === 1}
-                        >
-                          <Trash2 className="h-5 w-5 text-red-500" />
-                        </Button>
-                      </div>
-                    ))}
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={() => appendRule("")}
-                      className="mt-2 w-full"
-                    >
-                      <PlusCircle className="mr-2 h-4 w-4" />
-                      Add Rule
-                    </Button>
-                  </AccordionContent>
-                </AccordionItem>
-
-                {/* Coordinators Section */}
-                <AccordionItem value="coordinators">
-                  <AccordionTrigger className="text-lg font-medium">
-                    Coordinators
-                  </AccordionTrigger>
-                  <AccordionContent className="pt-4 space-y-4">
-                    {coordinatorFields.map((field, index) => (
-                      <div key={field.id} className="flex gap-4 items-end">
-                        <FormField
-                          control={form.control}
-                          name={`coordinators.${index}.name`}
-                          render={({ field }) => (
-                            <FormItem className="flex-1">
-                              <FormLabel>Name</FormLabel>
-                              <FormControl>
-                                <Input placeholder="Coordinator name" {...field} />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                        <FormField
-                          control={form.control}
-                          name={`coordinators.${index}.contactNumber`}
-                          render={({ field }) => (
-                            <FormItem className="flex-1">
-                              <FormLabel>Contact Number</FormLabel>
-                              <FormControl>
-                                <Input placeholder="10-digit number" {...field} />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => removeCoordinator(index)}
-                          className="h-10 w-10 rounded-full"
-                          disabled={coordinatorFields.length === 1}
-                        >
-                          <Trash2 className="h-5 w-5 text-red-500" />
-                        </Button>
-                      </div>
-                    ))}
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={() => appendCoordinator({ name: "", contactNumber: "" })}
-                      className="mt-2 w-full"
-                    >
-                      <PlusCircle className="mr-2 h-4 w-4" />
-                      Add Coordinator
-                    </Button>
-                  </AccordionContent>
-                </AccordionItem>
-              </Accordion>
-
-              {/* Submit Button in Card Footer */}
-              <div className="pt-4">
-                <Button type="submit" className="w-full">Create Event</Button>
+            {/* Prizes Section */}
+            <div className="space-y-4">
+              <div className="flex justify-between items-center">
+                <h3 className="text-lg font-medium">Prizes</h3>
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={addPrizeEntry}
+                >
+                  <PlusCircle className="mr-2 h-4 w-4" /> Add Prize
+                </Button>
               </div>
-            </form>
-          </Form>
+              <Separator />
+              {formData.prizes.map((prize, index) => (
+                <div key={index} className="flex space-x-2">
+                  <Input 
+                    type="number" 
+                    placeholder="Position" 
+                    value={prize.position}
+                    onChange={(e) => updatePrizeEntry(index, 'position', e.target.value)}
+                    required
+                    min={1}
+                  />
+                  <Input 
+                    type="number" 
+                    placeholder="Amount" 
+                    value={prize.amount}
+                    onChange={(e) => updatePrizeEntry(index, 'amount', e.target.value)}
+                    required
+                    min={0}
+                  />
+                  {formData.prizes.length > 1 && (
+                    <Button 
+                      type="button" 
+                      variant="destructive" 
+                      size="icon"
+                      onClick={() => removePrizeEntry(index)}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  )}
+                </div>
+              ))}
+            </div>
+
+            {/* Rules Section */}
+            <div className="space-y-4">
+              <div className="flex justify-between items-center">
+                <h3 className="text-lg font-medium">Event Rules</h3>
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={addRuleEntry}
+                >
+                  <PlusCircle className="mr-2 h-4 w-4" /> Add Rule
+                </Button>
+              </div>
+              <Separator />
+              {formData.rules.map((rule, index) => (
+                <div key={index} className="flex space-x-2">
+                  <Input 
+                    placeholder="Rule description" 
+                    value={rule}
+                    onChange={(e) => updateRuleEntry(index, e.target.value)}
+                    required
+                  />
+                  {formData.rules.length > 1 && (
+                    <Button 
+                      type="button" 
+                      variant="destructive" 
+                      size="icon"
+                      onClick={() => removeRuleEntry(index)}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  )}
+                </div>
+              ))}
+            </div>
+
+            {/* Coordinators Section */}
+            <div className="space-y-4">
+              <div className="flex justify-between items-center">
+                <h3 className="text-lg font-medium">Event Coordinators</h3>
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={addCoordinatorEntry}
+                >
+                  <PlusCircle className="mr-2 h-4 w-4" /> Add Coordinator
+                </Button>
+              </div>
+              <Separator />
+              {formData.coordinators.map((coordinator, index) => (
+                <div key={index} className="flex space-x-2">
+                  <Input 
+                    placeholder="Coordinator Name" 
+                    value={coordinator.name}
+                    onChange={(e) => updateCoordinatorEntry(index, 'name', e.target.value)}
+                    required
+                  />
+                  <Input 
+                    placeholder="Contact Number" 
+                    value={coordinator.contactNumber}
+                    onChange={(e) => updateCoordinatorEntry(index, 'contactNumber', e.target.value)}
+                    required
+                  />
+                  {formData.coordinators.length > 1 && (
+                    <Button 
+                      type="button" 
+                      variant="destructive" 
+                      size="icon"
+                      onClick={() => removeCoordinatorEntry(index)}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  )}
+                </div>
+              ))}
+            </div>
+
+            <Button type="submit" className="w-full">Create Event</Button>
+          </form>
         </CardContent>
       </Card>
     </div>

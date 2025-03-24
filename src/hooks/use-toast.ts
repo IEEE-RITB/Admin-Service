@@ -188,4 +188,7 @@ function useToast() {
   }
 }
 
-export { useToast, toast } 
+// Use a type assertion to indicate that `actionTypes` is used as a type
+export type { ActionType }
+
+export { useToast, toast, actionTypes }
