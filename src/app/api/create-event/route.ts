@@ -9,7 +9,6 @@ import { NextRequest, NextResponse } from "next/server";
 
 export async function POST(req: NextRequest) {
   const requestBody = await req.json();
-  console.log(requestBody);
   const {
     name,
     description,
@@ -35,7 +34,6 @@ export async function POST(req: NextRequest) {
   const organizer = await organizerCollection.findOne({
     _id: new ObjectId(adminUser.organizerId),
   });
-  console.log(organizer);
   if (!organizer) {
     return NextResponse.json({
       status: 404,

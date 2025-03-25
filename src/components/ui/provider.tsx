@@ -1,11 +1,11 @@
-"use client"
+import * as React from "react"
 
-import { ThemeProvider, type ThemeProviderProps } from "next-themes"
-
-export interface ColorModeProviderProps extends ThemeProviderProps {}
-
-export function Provider(props: ColorModeProviderProps) {
-  return (
-    <ThemeProvider attribute="class" defaultTheme="light" {...props} />
-  )
+export interface ProviderProps {
+  children: React.ReactNode;
 }
+
+const Provider: React.FC<ProviderProps> = ({ children }) => {
+  return <>{children}</>;
+};
+
+export { Provider }

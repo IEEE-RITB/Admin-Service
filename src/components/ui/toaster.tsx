@@ -10,6 +10,8 @@ import {
 } from "@/components/ui/toast"
 import { useToast } from "@/hooks/use-toast"
 
+import { toast } from "@/hooks/use-toast"
+
 export function Toaster() {
   const { toasts } = useToast()
 
@@ -33,3 +35,27 @@ export function Toaster() {
     </ToastProvider>
   )
 }
+
+export const toaster = {
+  success: ({ title, description }: { title: string; description?: string }) => {
+    toast({
+      title,
+      description,
+      variant: "default",
+    });
+  },
+  error: ({ title, description }: { title: string; description?: string }) => {
+    toast({
+      title,
+      description,
+      variant: "destructive",
+    });
+  },
+  info: ({ title, description }: { title: string; description?: string }) => {
+    toast({
+      title,
+      description,
+      variant: "default",
+    });
+  },
+};
