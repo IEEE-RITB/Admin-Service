@@ -41,7 +41,7 @@ export const EventSchema = z.object({
       })
     )
     .nonempty("At least one coordinator is required"),
-  organizerId: z.string(),
+  organizerId: z.string().optional(),
   userId: z
     .string({ required_error: "User ID is required" })
     .min(1, "User ID is required"),

@@ -15,8 +15,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
 import { PlusCircle, Trash2 } from "lucide-react";
 import axios from "axios";
+import { useSession } from "next-auth/react"
 
-// Define interfaces for form data structures
 interface TimelineEntry {
   activity: string;
   time: string;
@@ -42,16 +42,16 @@ interface EventFormData {
   maxParticipantsPerTeam: number;
   img: string;
   timeline: TimelineEntry[];
-  organizerId: string;
   prizes: PrizeEntry[];
   rules: string[];
   coordinators: CoordinatorEntry[];
 }
 
 export default function CreateEventPage() {
+  const { data: session, status } = useSession()
   const router = useRouter();
   const [formData, setFormData] = useState<EventFormData>({
-    userId: "67ddb0d8259f13d1ad4a6e75",
+    userId: session?.user?.id || "",
     name: "",
     description: "",
     date: new Date().toISOString().slice(0, 16),
@@ -60,7 +60,6 @@ export default function CreateEventPage() {
     maxParticipantsPerTeam: 4,
     img: "https://images.unsplash.com/photo-1726137065566-153debe32a53?q=80&w=1974&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDF8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
     timeline: [{ activity: "", time: "" }],
-    organizerId: "67dd699539ccce92cace749c",
     prizes: [{ position: 1, amount: 0 }],
     rules: [""],
     coordinators: [{ name: "", contactNumber: "" }],
@@ -74,7 +73,11 @@ export default function CreateEventPage() {
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     try {
-      const response = await axios.post("/api/create-event", formData);
+      console.log("user id form client side: ", session?.user?.id)
+      const response = await axios.post("/api/create-event", {
+        ...formData,
+        userId: session?.user?.id, // Assign userId dynamically
+      });
       router.push("/");
       console.log("Event created successfully:", response.data);
     } catch (error) {
@@ -163,6 +166,8 @@ export default function CreateEventPage() {
     }));
   };
 
+  if (status === "loading") return <div>Loading...</div>
+
   return (
     <div className="container py-10 max-w-4xl">
       <Card className="border shadow-md">
@@ -176,54 +181,54 @@ export default function CreateEventPage() {
             <div className="space-y-4">
               <h3 className="text-lg font-medium">Basic Information</h3>
               <Separator />
-              <Input 
-                name="name" 
-                placeholder="Event Name" 
-                value={formData.name} 
-                onChange={handleChange} 
+              <Input
+                name="name"
+                placeholder="Event Name"
+                value={formData.name}
+                onChange={handleChange}
                 required
               />
-              <Textarea 
-                name="description" 
-                placeholder="Describe your event" 
-                value={formData.description} 
-                onChange={handleChange} 
+              <Textarea
+                name="description"
+                placeholder="Describe your event"
+                value={formData.description}
+                onChange={handleChange}
                 required
               />
-              <Input 
-                type="datetime-local" 
-                name="date" 
-                value={formData.date} 
-                onChange={handleChange} 
+              <Input
+                type="datetime-local"
+                name="date"
+                value={formData.date}
+                onChange={handleChange}
                 required
               />
-              <Input 
-                name="venue" 
-                placeholder="Venue" 
-                value={formData.venue} 
-                onChange={handleChange} 
+              <Input
+                name="venue"
+                placeholder="Venue"
+                value={formData.venue}
+                onChange={handleChange}
                 required
               />
-              <Input 
-                name="theme" 
-                placeholder="Theme" 
-                value={formData.theme} 
-                onChange={handleChange} 
+              <Input
+                name="theme"
+                placeholder="Theme"
+                value={formData.theme}
+                onChange={handleChange}
               />
-              <Input 
-                type="number" 
-                name="maxParticipantsPerTeam" 
+              <Input
+                type="number"
+                name="maxParticipantsPerTeam"
                 placeholder="Max Participants per Team"
-                value={formData.maxParticipantsPerTeam} 
-                onChange={handleChange} 
+                value={formData.maxParticipantsPerTeam}
+                onChange={handleChange}
                 required
                 min={1}
               />
-              <Input 
-                name="img" 
-                placeholder="Image URL" 
-                value={formData.img} 
-                onChange={handleChange} 
+              <Input
+                name="img"
+                placeholder="Image URL"
+                value={formData.img}
+                onChange={handleChange}
               />
             </div>
 
@@ -231,10 +236,10 @@ export default function CreateEventPage() {
             <div className="space-y-4">
               <div className="flex justify-between items-center">
                 <h3 className="text-lg font-medium">Event Timeline</h3>
-                <Button 
-                  type="button" 
-                  variant="outline" 
-                  size="sm" 
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
                   onClick={addTimelineEntry}
                 >
                   <PlusCircle className="mr-2 h-4 w-4" /> Add Timeline Entry
@@ -243,22 +248,22 @@ export default function CreateEventPage() {
               <Separator />
               {formData.timeline.map((entry, index) => (
                 <div key={index} className="flex space-x-2">
-                  <Input 
-                    placeholder="Activity" 
+                  <Input
+                    placeholder="Activity"
                     value={entry.activity}
                     onChange={(e) => updateTimelineEntry(index, 'activity', e.target.value)}
                     required
                   />
-                  <Input 
-                    type="time" 
+                  <Input
+                    type="time"
                     value={entry.time}
                     onChange={(e) => updateTimelineEntry(index, 'time', e.target.value)}
                     required
                   />
                   {formData.timeline.length > 1 && (
-                    <Button 
-                      type="button" 
-                      variant="destructive" 
+                    <Button
+                      type="button"
+                      variant="destructive"
                       size="icon"
                       onClick={() => removeTimelineEntry(index)}
                     >
@@ -273,10 +278,10 @@ export default function CreateEventPage() {
             <div className="space-y-4">
               <div className="flex justify-between items-center">
                 <h3 className="text-lg font-medium">Prizes</h3>
-                <Button 
-                  type="button" 
-                  variant="outline" 
-                  size="sm" 
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
                   onClick={addPrizeEntry}
                 >
                   <PlusCircle className="mr-2 h-4 w-4" /> Add Prize
@@ -285,26 +290,26 @@ export default function CreateEventPage() {
               <Separator />
               {formData.prizes.map((prize, index) => (
                 <div key={index} className="flex space-x-2">
-                  <Input 
-                    type="number" 
-                    placeholder="Position" 
+                  <Input
+                    type="number"
+                    placeholder="Position"
                     value={prize.position}
                     onChange={(e) => updatePrizeEntry(index, 'position', e.target.value)}
                     required
                     min={1}
                   />
-                  <Input 
-                    type="number" 
-                    placeholder="Amount" 
+                  <Input
+                    type="number"
+                    placeholder="Amount"
                     value={prize.amount}
                     onChange={(e) => updatePrizeEntry(index, 'amount', e.target.value)}
                     required
                     min={0}
                   />
                   {formData.prizes.length > 1 && (
-                    <Button 
-                      type="button" 
-                      variant="destructive" 
+                    <Button
+                      type="button"
+                      variant="destructive"
                       size="icon"
                       onClick={() => removePrizeEntry(index)}
                     >
@@ -319,10 +324,10 @@ export default function CreateEventPage() {
             <div className="space-y-4">
               <div className="flex justify-between items-center">
                 <h3 className="text-lg font-medium">Event Rules</h3>
-                <Button 
-                  type="button" 
-                  variant="outline" 
-                  size="sm" 
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
                   onClick={addRuleEntry}
                 >
                   <PlusCircle className="mr-2 h-4 w-4" /> Add Rule
@@ -331,16 +336,16 @@ export default function CreateEventPage() {
               <Separator />
               {formData.rules.map((rule, index) => (
                 <div key={index} className="flex space-x-2">
-                  <Input 
-                    placeholder="Rule description" 
+                  <Input
+                    placeholder="Rule description"
                     value={rule}
                     onChange={(e) => updateRuleEntry(index, e.target.value)}
                     required
                   />
                   {formData.rules.length > 1 && (
-                    <Button 
-                      type="button" 
-                      variant="destructive" 
+                    <Button
+                      type="button"
+                      variant="destructive"
                       size="icon"
                       onClick={() => removeRuleEntry(index)}
                     >
@@ -355,10 +360,10 @@ export default function CreateEventPage() {
             <div className="space-y-4">
               <div className="flex justify-between items-center">
                 <h3 className="text-lg font-medium">Event Coordinators</h3>
-                <Button 
-                  type="button" 
-                  variant="outline" 
-                  size="sm" 
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
                   onClick={addCoordinatorEntry}
                 >
                   <PlusCircle className="mr-2 h-4 w-4" /> Add Coordinator
@@ -367,22 +372,22 @@ export default function CreateEventPage() {
               <Separator />
               {formData.coordinators.map((coordinator, index) => (
                 <div key={index} className="flex space-x-2">
-                  <Input 
-                    placeholder="Coordinator Name" 
+                  <Input
+                    placeholder="Coordinator Name"
                     value={coordinator.name}
                     onChange={(e) => updateCoordinatorEntry(index, 'name', e.target.value)}
                     required
                   />
-                  <Input 
-                    placeholder="Contact Number" 
+                  <Input
+                    placeholder="Contact Number"
                     value={coordinator.contactNumber}
                     onChange={(e) => updateCoordinatorEntry(index, 'contactNumber', e.target.value)}
                     required
                   />
                   {formData.coordinators.length > 1 && (
-                    <Button 
-                      type="button" 
-                      variant="destructive" 
+                    <Button
+                      type="button"
+                      variant="destructive"
                       size="icon"
                       onClick={() => removeCoordinatorEntry(index)}
                     >
