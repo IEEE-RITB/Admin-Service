@@ -3,6 +3,7 @@ import { Montserrat } from "next/font/google";
 import "./globals.css";
 import { Provider } from "@/components/ui/provider";
 import { Toaster } from "@/components/ui/toaster";
+import { SessionProvider } from "next-auth/react";
 
 const montserrat = Montserrat({
   variable: "--font-montserrat",
@@ -28,10 +29,12 @@ export default function BaseLayout({
       <body
         className={`${montserrat.className}`}
       >
-        <Provider>
-          {children}
-          <Toaster />
-        </Provider>
+        <SessionProvider>
+          <Provider>
+            {children}
+            <Toaster />
+          </Provider>
+        </SessionProvider>
       </body>
     </html>
   );

@@ -15,7 +15,7 @@ export async function middleware(request: NextRequest) {
     const isAuthenticated = !!session?.user;
 
     const isPublicPath = publicPaths.some(path =>
-        pathname === path || pathname.startsWith(`${path}/`)
+        pathname === path || pathname.startsWith(`${path}/`) 
     );
 
     const isApiRoute = pathname.startsWith('/api/');
